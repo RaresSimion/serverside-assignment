@@ -13,5 +13,5 @@ GET https://server-side-assignment.azurewebsites.net/api/startweatherjobtrigger
 
 ###
 
-# Get job images (Azure) (test)
+# Get job images (Azure)
 GET https://server-side-assignment.azurewebsites.net/api/images/3953908a-203d-4425-803d-787887a496c8
