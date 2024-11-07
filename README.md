@@ -4,6 +4,15 @@ This project is a server-side application that processes weather data and genera
 
 ## Project Structure
 
+- **StartJobTrigger/**: Contains the Azure Function that triggers the job processing.
+    - `StartJobTrigger.cs`: Azure Function that triggers the job processing.
+
+- **ProcessJobQueue/**: Contains the Azure Function that processes the job queue.
+    - `ProcessJobQueue.cs`: Azure Function that processes the job queue.
+
+- **GetImagesTrigger/**: Contains the Azure Function that retrieves images from Blob Storage.
+    - `GetImagesTrigger.cs`: Azure Function that retrieves images from Blob Storage.
+
 - **services/**: Contains the service classes for image editing, weather data processing, and blob storage operations.
     - `ImageService.cs`: Handles image processing tasks.
     - `WeatherService.cs`: Manages weather data retrieval and processing.
