@@ -23,7 +23,7 @@
 $resourceGroupName = "serverside-assignment-rg"
 $location = "westeurope"
 $templateFile = "./template.bicep"
-$functionAppName = "serverside-assignment-func"
+$functionAppName = "server-side-assignment"
 $deploymentName = "serverside-assignment-deployment"
 
 # Log in if not already logged in
