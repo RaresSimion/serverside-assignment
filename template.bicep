@@ -64,6 +64,11 @@ resource queue1 'Microsoft.Storage/storageAccounts/queueServices/queues@2022-09-
   parent: queueServices
 }
 
+resource queue2 'Microsoft.Storage/storageAccounts/queueServices/queues@2022-09-01' = {
+  name: 'image-processing-queue'
+  parent: queueServices
+}
+
 // define the blob service for the storage account
 resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2022-09-01' = {
   name: 'default'

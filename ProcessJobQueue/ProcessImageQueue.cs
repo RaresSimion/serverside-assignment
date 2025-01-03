@@ -4,6 +4,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using assignment.services;
+using assignment.models;
 
 namespace assignment
 {
@@ -11,7 +12,6 @@ namespace assignment
     {
         private readonly ILogger<ProcessImageQueue> _logger;
         private readonly ImageService _imageService = new ImageService();
-        private readonly WeatherService _weatherService = new WeatherService();
         private readonly BlobService _blobService = new BlobService();
 
         public ProcessImageQueue(ILogger<ProcessImageQueue> logger)
@@ -20,48 +20,37 @@ namespace assignment
         }
 
         [Function(nameof(ProcessImageQueue))]
-        public async Task Run([QueueTrigger("weather-queue", Connection = "AzureWebJobsStorage")] string job)
+        public async Task Run([QueueTrigger("image-processing-queue", Connection = "AzureWebJobsStorage")] string taskMessage)
         {
-            var jobId = JsonConvert.DeserializeObject<string>(job);
+            var task = JsonConvert.DeserializeObject<ImageProcessingTask>(taskMessage);
 
-            _logger.LogInformation($"Processing job: {jobId}");
+            _logger.LogInformation($"Processing image for job: {task.JobId}, station: {task.Station.StationName}");
 
-            // Update the job status to "Processing"
-            JobStatusStore.JobStatuses[jobId] = ("Processing", new List<string>());
-
-            // Fetch weather data
-            var stationMeasurements = await _weatherService.GetWeatherStationMeasurements(_logger);
-
-            if (stationMeasurements != null && stationMeasurements.Count > 0)
+            try
             {
-                // Generate images for each weather station
-                for (int i = 0; i < stationMeasurements.Count; i++)
-                {
-                    // Generate the weather text for the image
-                    var station = stationMeasurements[i];
-                    var weatherText = $"Station: {station.StationName}, Temp: {station.Temperature}°C, " +
-                                      $"Wind: {station.WindSpeed} m/s, {station.WeatherDescription}";
+                // Get an image
+                var imageBytes = await _imageService.GetImage(_logger);
+                var imageStream = new MemoryStream(imageBytes);
 
-                    // Fetch the image
-                    var imageBytes = await _imageService.GetImage(_logger);
-                    var imageStream = new MemoryStream(imageBytes);
+                // Add the weather text to the image
+                var weatherText = $"Station: {task.Station.StationName}, Temp: {task.Station.Temperature}°C, " +
+                                  $"Wind: {task.Station.WindSpeed} m/s, {task.Station.WeatherDescription}";
 
-                    // Add the weather text to the image
-                    var outputImage = ImageService.AddTextToImage(imageStream, (weatherText, (10, 10), 24, "#000000"));
+                var outputImage = ImageService.AddTextToImage(imageStream, (weatherText, (10, 10), 24, "#000000"));
 
-                    // Save the image to Blob Storage
-                    await _blobService.UploadImageToBlob(jobId, outputImage, _logger);
-                }
+                // Save the image to Blob Storage
+                await _blobService.UploadImageToBlob(task.JobId, outputImage, _logger);
 
+                _logger.LogInformation($"Image for station {task.Station.StationName} processed successfully.");
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogError("Failed to fetch weather data.");
-                return;
+                _logger.LogError($"An error occurred processing the image for station {task.Station.StationName}: {ex.Message}");
+                throw;
             }
 
-            JobStatusStore.JobStatuses[jobId] = ("Completed", JobStatusStore.JobStatuses[jobId].imageIds);
-            _logger.LogInformation($"Job {jobId} completed.");
+            JobStatusStore.JobStatuses[task.JobId] = ("Completed", JobStatusStore.JobStatuses[task.JobId].imageIds);
+            _logger.LogInformation($"Job {task.JobId} completed.");
         }
     }
 }
